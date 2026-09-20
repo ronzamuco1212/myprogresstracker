@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>My Progress Tracker</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+:root{
+  --bg:#111827;
+  --surface:#1E293B;
+  --surface2:#263449;
+  --cell:#263449;
+  --cell2:#30405A;
+  --border:#334155;
+  --text:#F8FAFC;
+  --muted:#94A3B8;
+  --purple:#7C3AED;
+  --purple2:#8B5CF6;
+  --orange:#F97316;
+  --orange2:#FB923C;
+  --teal:#14B8A6;
+  --teal2:#2DD4BF;
+  --danger:#EF4444;
+  --shadow:0 8px 25px rgba(0,0,0,.25);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+html,body{
+  margin:0;padding:0;width:100%;min-height:100%;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--text);
+}
+
+body{padding:14px;padding-bottom:100px;}
+button,input{font:inherit;}
+button{cursor:pointer;}
+
+.app{width:100%;max-width:600px;margin:auto;}
+
+/* HEADER */
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.title-area h1{margin:0;font-size:25px;font-weight:800;letter-spacing:-.5px;}
+.title-area p{margin:4px 0 0;color:var(--muted);font-size:13px;}
+
+.header-actions{display:flex;gap:8px;align-items:center;}
+
+.user-chip{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:8px 10px;font-size:12px;font-weight:700;
+  max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.user-chip .dot{
+  width:8px;height:8px;border-radius:50%;background:var(--teal2);
+  box-shadow:0 0 8px var(--teal2);flex-shrink:0;
+}
+.user-chip.hidden{display:none;}
+
+.logout-btn{
+  border:1px solid var(--danger);background:transparent;color:var(--danger);
+  border-radius:12px;padding:9px 11px;font-size:12px;font-weight:700;
+}
+.logout-btn.hidden{display:none;}
+
+/* LOGIN SCREEN */
+.login-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:1000;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.login-screen.hidden{display:none;}
+
+.login-card{
+  width:100%;max-width:400px;background:var(--surface);
+  border:1px solid var(--border);border-radius:20px;padding:28px 24px;
+  box-shadow:var(--shadow);text-align:center;
+}
+
+.login-icon{font-size:48px;margin-bottom:8px;}
+.login-title{font-size:22px;font-weight:800;margin:0 0 6px;}
+.login-desc{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.5;}
+
+.login-input{
+  width:100%;background:var(--surface2);color:var(--text);
+  border:1px solid var(--border);border-radius:12px;padding:13px;
+  outline:none;margin-bottom:10px;text-align:center;
+}
+.login-input:focus{border-color:var(--purple2);}
+
+.login-btn{
+  width:100%;border:none;border-radius:12px;padding:13px;
+  font-weight:800;font-size:14px;margin-bottom:8px;
+}
+.login-btn.primary{background:var(--purple);color:#fff;}
+.login-btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.login-btn:active{transform:scale(.98);}
+
+.login-tabs{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  background:var(--surface2);border-radius:12px;padding:4px;margin-bottom:16px;
+}
+.login-tab{
+  border:none;background:transparent;color:var(--muted);
+  padding:10px;border-radius:9px;font-weight:800;font-size:13px;
+}
+.login-tab.active{background:var(--purple);color:#fff;}
+
+.login-error{
+  color:var(--danger);font-size:12px;margin-top:10px;min-height:16px;
+}
+
+.login-note{
+  color:var(--muted);font-size:11px;margin-top:14px;line-height:1.5;
+}
+
+/* SUMMARY */
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+
+.summary-card{
+  position:relative;overflow:hidden;background:var(--surface);
+  border:1px solid var(--border);border-radius:16px;padding:14px;
+  box-shadow:var(--shadow);
+}
+
+.summary-card::after{
+  content:"";position:absolute;width:80px;height:80px;
+  border-radius:50%;right:-30px;top:-30px;opacity:.12;
+}
+
+.summary-card.cal::after{background:var(--orange);}
+.summary-card.walk::after{background:var(--teal);}
+.summary-label{color:var(--muted);font-size:12px;font-weight:600;}
+.summary-number{font-size:28px;line-height:1;font-weight:900;margin-top:7px;}
+.summary-card.cal .summary-number{color:var(--orange2);}
+.summary-card.walk .summary-number{color:var(--teal2);}
+.summary-bottom{margin-top:6px;font-size:11px;color:var(--muted);}
+
+/* CALENDAR CARD */
+.calendar-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:12px;box-shadow:var(--shadow);
+}
+
+.month-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.month-title{text-align:center;flex:1;}
+.month-title strong{display:block;font-size:18px;font-weight:800;}
+.month-title span{font-size:11px;color:var(--muted);}
+
+.month-btn{
+  width:38px;height:38px;border:none;border-radius:12px;
+  background:var(--surface2);color:var(--text);font-size:21px;font-weight:700;
+}
+.month-btn:active{transform:scale(.94);background:var(--purple);}
+
+.weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px;}
+.weekday{text-align:center;color:var(--muted);font-size:10px;font-weight:800;padding:4px 0;}
+
+.calendar{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:5px;
+  touch-action:pan-y;
+}
+
+.day{
+  position:relative;min-width:0;aspect-ratio:1/1.08;
+  background:var(--cell);border:1px solid var(--border);
+  border-radius:10px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;overflow:hidden;transition:.15s;
+}
+.day:active{transform:scale(.94);}
+.day.empty{background:transparent;border-color:transparent;}
+.day-number{font-size:14px;font-weight:800;z-index:2;}
+.day.today{border:2px solid var(--purple2);}
+.day.selected{background:var(--purple);border-color:var(--purple2);box-shadow:0 0 0 2px rgba(139,92,246,.18);}
+
+.today-label{position:absolute;top:3px;font-size:7px;color:#DDD6FE;font-weight:800;}
+.marks{display:flex;gap:2px;margin-top:4px;z-index:2;}
+.mark{width:7px;height:7px;border-radius:50%;}
+.mark.cal{background:var(--orange2);box-shadow:0 0 6px rgba(251,146,60,.4);}
+.mark.walk{background:var(--teal2);box-shadow:0 0 6px rgba(45,212,191,.4);}
+
+/* SELECTED DAY */
+.selected-section{
+  margin-top:12px;background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:14px;box-shadow:var(--shadow);
+}
+.selected-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.selected-header strong{font-size:15px;}
+.selected-header span{color:var(--muted);font-size:11px;}
+
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+.action-btn{
+  border:1px solid var(--border);background:var(--surface2);color:var(--text);
+  min-height:72px;border-radius:15px;padding:10px;text-align:left;transition:.15s;
+}
+.action-btn:active{transform:scale(.97);}
+.action-top{display:flex;align-items:center;justify-content:space-between;}
+.action-icon{font-size:23px;}
+.check{
+  width:25px;height:25px;border-radius:50%;border:2px solid #64748B;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;
+}
+.action-name{margin-top:7px;font-size:12px;font-weight:800;}
+.action-status{margin-top:2px;color:var(--muted);font-size:10px;}
+
+.action-btn.cal.active{border-color:var(--orange);background:rgba(249,115,22,.13);}
+.action-btn.cal.active .check{background:var(--orange);border-color:var(--orange);}
+.action-btn.walk.active{border-color:var(--teal);background:rgba(20,184,166,.13);}
+.action-btn.walk.active .check{background:var(--teal);border-color:var(--teal);}
+
+.total-box{
+  margin-top:12px;padding:12px 14px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:14px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.total-label{color:var(--muted);font-size:11px;}
+.total-day{font-size:22px;font-weight:900;color:var(--purple2);}
+
+/* =========================================================
+   VIEWS (Today, Weekly, Monthly, Overall)
+========================================================= */
+
+.view{display:none;}
+.view.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* WEEK HEADER */
+.week-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+}
+.week-range{
+  text-align:center;flex:1;
+  font-size:14px;font-weight:800;color:var(--text);
+}
+.week-range span{
+  display:block;font-size:11px;color:var(--muted);
+  font-weight:600;margin-top:2px;
+}
+
+/* HABIT CARDS (Weekly/Monthly) */
+.habit-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:14px;box-shadow:var(--shadow);
+  margin-bottom:12px;
+}
+
+.habit-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.habit-title-area{
+  display:flex;align-items:center;gap:10px;
+}
+.habit-icon{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;
+}
+.habit-icon.cal{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.35);}
+.habit-icon.walk{background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.35);}
+
+.habit-name{font-size:15px;font-weight:800;}
+.habit-streak{font-size:11px;color:var(--orange2);font-weight:700;margin-top:2px;}
+
+.habit-check{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:900;color:#fff;flex-shrink:0;
+}
+.habit-check.cal{background:var(--purple);}
+.habit-check.walk{background:#9F3A2E;}
+.habit-check.empty{background:var(--surface2);border:1px solid var(--border);}
+
+/* WEEK DAY CIRCLES */
+.week-days{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:6px;
+}
+
+.day-circle-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+}
+
+.day-circle-label{
+  font-size:10px;color:var(--muted);font-weight:700;
+}
+
+.day-circle{
+  width:100%;aspect-ratio:1/1;max-width:42px;
+  border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:900;color:var(--muted);
+  transition:.2s;
+}
+
+.day-circle.done.cal{
+  background:var(--purple);border-color:var(--purple2);color:#fff;
+}
+.day-circle.done.walk{
+  background:#9F3A2E;border-color:#B84A3A;color:#fff;
+}
+.day-circle.today{
+  box-shadow:0 0 0 3px rgba(139,92,246,.25);
+}
+.day-circle.future{opacity:.35;}
+
+/* MONTH GRID */
+.month-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:5px;
+  margin-top:4px;
+}
+.month-day-cell{
+  aspect-ratio:1/1;border-radius:6px;
+  background:var(--surface2);border:1px solid transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:var(--muted);font-weight:700;
+}
+.month-day-cell.done.cal{
+  background:rgba(124,58,237,.35);
+  border-color:var(--purple2);
+  color:#DDD6FE;
+}
+.month-day-cell.done.walk{
+  background:rgba(159,58,46,.4);
+  border-color:#B84A3A;
+  color:#FECACA;
+}
+.month-day-cell.empty{opacity:0;}
+
+/* OVERALL VIEW */
+.overall-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:16px;box-shadow:var(--shadow);
+  margin-bottom:12px;
+}
+.overall-title{
+  font-size:14px;font-weight:800;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.stat-row{
+  display:flex;justify-content:space-between;
+  padding:9px 0;border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.stat-row:last-child{border-bottom:none;}
+.stat-label{color:var(--muted);}
+.stat-value{font-weight:800;color:var(--text);}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(17,24,39,.95);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  z-index:500;
+}
+
+.nav-inner{
+  max-width:600px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  background:var(--surface2);
+  border-radius:16px;padding:4px;
+}
+
+.nav-btn{
+  border:none;background:transparent;color:var(--muted);
+  padding:10px 6px;border-radius:12px;
+  font-size:12px;font-weight:800;cursor:pointer;
+  transition:.2s;
+}
+.nav-btn.active{
+  background:var(--purple);color:#fff;
+  box-shadow:0 4px 12px rgba(124,58,237,.4);
+}
+.nav-btn:active{transform:scale(.95);}
+
+/* FOOTER */
+.footer{text-align:center;color:var(--muted);font-size:10px;padding:14px 0 5px;}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:12px 18px;font-size:12px;font-weight:700;
+  color:var(--text);box-shadow:var(--shadow);opacity:0;transition:.3s;z-index:2000;
+  max-width:90%;text-align:center;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+/* SYNC INDICATOR */
+.sync-indicator{
+  position:fixed;top:14px;right:14px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:6px 12px;font-size:11px;font-weight:700;
+  color:var(--muted);opacity:0;transition:.3s;z-index:1500;
+  display:flex;align-items:center;gap:6px;
+}
+.sync-indicator.show{opacity:1;}
+.sync-indicator .spin{
+  width:10px;height:10px;border:2px solid var(--purple2);
+  border-top-color:transparent;border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* SMALL SCREEN */
+@media(max-width:360px){
+  body{padding:10px;padding-bottom:90px;}
+  .title-area h1{font-size:22px;}
+  .calendar-card{padding:9px;}
+  .calendar,.weekdays{gap:3px;}
+  .day{border-radius:8px;}
+  .day-number{font-size:12px;}
+  .mark{width:6px;height:6px;}
+  .user-chip{max-width:100px;font-size:11px;}
+  .nav-btn{font-size:11px;padding:8px 4px;}
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <h2 class="login-title" id="loginTitle">Welcome Back</h2>
+    <p class="login-desc" id="loginDesc">
+      Mag-login gamit ang <b>username</b> at password.
+      Isang beses lang — hindi mo na kailangang mag-login ulit.
+    </p>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tabLogin" onclick="switchTab('login')">Login</button>
+      <button class="login-tab" id="tabRegister" onclick="switchTab('register')">Sign Up</button>
+    </div>
+
+    <input class="login-input" id="loginUsername" type="text"
+      placeholder="Username" autocomplete="username"
+      autocapitalize="none" spellcheck="false">
+
+    <input class="login-input" id="loginPassword" type="password"
+      placeholder="Password (min 6 chars)" autocomplete="current-password">
+
+    <button class="login-btn primary" id="mainBtn" onclick="handleSubmit()">
+      🔐 Login
+    </button>
+
+    <div class="login-error" id="loginError"></div>
+
+    <div class="login-note">
+      🔒 Ang username mo ay naka-save para hindi ka na mag-login every time.
+      Basta pareho ang username at password, mag-sync ang data sa lahat ng devices mo.
+    </div>
+  </div>
+</div>
+
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title-area">
+      <h1>My Progress</h1>
+      <p>Small steps every day 💪</p>
+    </div>
+    <div class="header-actions">
+      <div class="user-chip hidden" id="userChip">
+        <div class="dot"></div>
+        <span id="userChipName">user</span>
+      </div>
+      <button class="logout-btn hidden" id="logoutBtn" onclick="logoutAccount()">
+        Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="summary-card cal">
+      <div class="summary-label">🔥 Calorie Deficit</div>
+      <div class="summary-number" id="calTotal">0</div>
+      <div class="summary-bottom">logged days</div>
+    </div>
+    <div class="summary-card walk">
+      <div class="summary-label">🚶 Walking</div>
+      <div class="summary-number" id="walkTotal">0</div>
+      <div class="summary-bottom">logged days</div>
+    </div>
+  </div>
+
+  <!-- ============ TODAY VIEW ============ -->
+  <div class="view active" id="viewToday">
+    <div class="calendar-card">
+      <div class="month-header">
+        <button class="month-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="month-title">
+          <strong id="monthName"></strong>
+          <span>Swipe left or right</span>
+        </div>
+        <button class="month-btn" onclick="changeMonth(1)">›</button>
+      </div>
+
+      <div class="weekdays">
+        <div class="weekday">SUN</div>
+        <div class="weekday">MON</div>
+        <div class="weekday">TUE</div>
+        <div class="weekday">WED</div>
+        <div class="weekday">THU</div>
+        <div class="weekday">FRI</div>
+        <div class="weekday">SAT</div>
+      </div>
+
+      <div class="calendar" id="calendar"></div>
+    </div>
+
+    <div class="selected-section">
+      <div class="selected-header">
+        <strong id="selectedDateText"></strong>
+        <span id="selectedTodayText"></span>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn cal" id="calButton" onclick="toggleDay('cal')">
+          <div class="action-top">
+            <div class="action-icon">🔥</div>
+            <div class="check" id="calCheck"></div>
+          </div>
+          <div class="action-name">Calorie Deficit</div>
+          <div class="action-status" id="calStatus">Not logged</div>
+        </button>
+
+        <button class="action-btn walk" id="walkButton" onclick="toggleDay('walk')">
+          <div class="action-top">
+            <div class="action-icon">🚶</div>
+            <div class="check" id="walkCheck"></div>
+          </div>
+          <div class="action-name">Walking</div>
+          <div class="action-status" id="walkStatus">Not logged</div>
+        </button>
+      </div>
+
+      <div class="total-box">
+        <div>
+          <div class="total-label">Total logged days</div>
+        </div>
+        <div class="total-day" id="dayTotal">Day 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WEEKLY VIEW ============ -->
+  <div class="view" id="viewWeekly">
+    <div class="calendar-card" style="margin-bottom:12px;">
+      <div class="week-nav">
+        <button class="month-btn" onclick="changeWeek(-1)">‹</button>
+        <div class="week-range" id="weekRange">
+          <span id="weekLabel">This Week</span>
+        </div>
+        <button class="month-btn" onclick="changeWeek(1)">›</button>
+      </div>
+    </div>
+
+    <div id="weeklyHabits"></div>
+  </div>
+
+  <!-- ============ MONTHLY VIEW ============ -->
+  <div class="view" id="viewMonthly">
+    <div class="calendar-card" style="margin-bottom:12px;">
+      <div class="week-nav">
+        <button class="month-btn" onclick="changeMonthView(-1)">‹</button>
+        <div class="week-range" id="monthViewLabel">Month</div>
+        <button class="month-btn" onclick="changeMonthView(1)">›</button>
+      </div>
+    </div>
+
+    <div id="monthlyHabits"></div>
+  </div>
+
+  <!-- ============ OVERALL VIEW ============ -->
+  <div class="view" id="viewOverall">
+    <div class="overall-card">
+      <div class="overall-title">🔥 Calorie Deficit</div>
+      <div class="stat-row">
+        <span class="stat-label">Total logged days</span>
+        <span class="stat-value" id="ovCalTotal">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Current streak</span>
+        <span class="stat-value" id="ovCalStreak">0 days</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Longest streak</span>
+        <span class="stat-value" id="ovCalBest">0 days</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">This month</span>
+        <span class="stat-value" id="ovCalMonth">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">This week</span>
+        <span class="stat-value" id="ovCalWeek">0</span>
+      </div>
+    </div>
+
+    <div class="overall-card">
+      <div class="overall-title">🚶 Walking</div>
+      <div class="stat-row">
+        <span class="stat-label">Total logged days</span>
+        <span class="stat-value" id="ovWalkTotal">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Current streak</span>
+        <span class="stat-value" id="ovWalkStreak">0 days</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Longest streak</span>
+        <span class="stat-value" id="ovWalkBest">0 days</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">This month</span>
+        <span class="stat-value" id="ovWalkMonth">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">This week</span>
+        <span class="stat-value" id="ovWalkWeek">0</span>
+      </div>
+    </div>
+
+    <div class="overall-card">
+      <div class="overall-title">📊 Combined</div>
+      <div class="stat-row">
+        <span class="stat-label">Total active days</span>
+        <span class="stat-value" id="ovAllDays">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Both logged same day</span>
+        <span class="stat-value" id="ovBothDays">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Auto-saved • Cloud synced across devices
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-inner">
+    <button class="nav-btn active" id="navToday" onclick="switchView('today')">Today</button>
+    <button class="nav-btn" id="navWeekly" onclick="switchView('weekly')">Weekly</button>
+    <button class="nav-btn" id="navMonthly" onclick="switchView('monthly')">Monthly</button>
+    <button class="nav-btn" id="navOverall" onclick="switchView('overall')">Overall</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SYNC INDICATOR -->
+<div class="sync-indicator" id="syncIndicator">
+  <div class="spin"></div>
+  <span>Syncing...</span>
+</div>
+
+
+<script>
+
+/* =========================================================
+   FIREBASE CONFIG
+========================================================= */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDD9MiVmqQBraFG4o8Pum02bW8LlaEtgss",
+  authDomain: "myhabittracker-cd56b.firebaseapp.com",
+  databaseURL: "https://myhabittracker-cd56b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "myhabittracker-cd56b",
+  storageBucket: "myhabittracker-cd56b.firebasestorage.app",
+  messagingSenderId: "114281951002",
+  appId: "1:114281951002:web:1e9d951d15c2bf2e0e46a3"
+};
+
+
+/* =========================================================
+   FIREBASE SETUP
+========================================================= */
+
+let firebaseReady = false;
+let db = null;
+let auth = null;
+let currentUser = null;
+let cloudListener = null;
+let isSyncing = false;
+
+try{
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  auth = firebase.auth();
+  firebaseReady = true;
+  console.log("✅ Firebase initialized");
+}catch(error){
+  console.log("❌ Firebase error:", error);
+}
+
+
+/* =========================================================
+   LOCAL DATA
+========================================================= */
+
+const DATA_KEY = "my_progress_v4";
+const USERNAME_KEY = "my_progress_username";
+const DOMAIN = "@myprogress.app";
+
+let data = loadData();
+let viewDate = new Date();
+let selectedDate = formatDate(new Date());
+let touchStartX = 0;
+let authMode = "login";
+
+// View state
+let currentView = "today";
+let weekOffset = 0;       // 0 = this week, -1 = last week, etc.
+let monthViewOffset = 0;  // 0 = this month, -1 = last month
+
+
+/* =========================================================
+   DATA
+========================================================= */
+
+function loadData(){
+  try{
+    const saved = localStorage.getItem(DATA_KEY);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(parsed && parsed.days) return parsed;
+    }
+  }catch(error){ console.log(error); }
+  return { days:{} };
+}
+
+function saveData(){
+  localStorage.setItem(DATA_KEY, JSON.stringify(data));
+}
+
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+function pad(num){ return String(num).padStart(2,"0"); }
+
+function formatDate(date){
+  return date.getFullYear() + "-" + pad(date.getMonth()+1) + "-" + pad(date.getDate());
+}
+
+function parseDate(str){
+  const parts = str.split("-");
+  return new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+}
+
+function isToday(date){
+  return formatDate(date) === formatDate(new Date());
+}
+
+// Get start of week (Monday-based, or Sunday? -- use Sunday to match header)
+function getStartOfWeek(date){
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sunday
+  d.setDate(d.getDate() - day);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function getWeekDates(offset){
+  const today = new Date();
+  const start = getStartOfWeek(today);
+  start.setDate(start.getDate() + (offset * 7));
+  const days = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+
+/* =========================================================
+   USERNAME VALIDATION
+========================================================= */
+
+function cleanUsername(raw){
+  return raw.trim().toLowerCase();
+}
+
+function validateUsername(username){
+  if(username.length < 3) return "Username must be at least 3 characters.";
+  if(username.length > 20) return "Username must be 20 characters or less.";
+  if(!/^[a-z0-9_]+$/.test(username)) return "Username can only contain letters, numbers, and underscore (_).";
+  return null;
+}
+
+function usernameToEmail(username){
+  return username + DOMAIN;
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+let toastTimer = null;
+
+function showToast(message){
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+
+/* =========================================================
+   SYNC INDICATOR
+========================================================= */
+
+function showSyncIndicator(show){
+  const el = document.getElementById("syncIndicator");
+  if(show) el.classList.add("show");
+  else el.classList.remove("show");
+}
+
+
+/* =========================================================
+   VIEW SWITCHER
+========================================================= */
+
+function switchView(view){
+  currentView = view;
+
+  // Hide all views
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+
+  // Show selected
+  if(view === "today"){
+    document.getElementById("viewToday").classList.add("active");
+  }else if(view === "weekly"){
+    document.getElementById("viewWeekly").classList.add("active");
+    renderWeekly();
+  }else if(view === "monthly"){
+    document.getElementById("viewMonthly").classList.add("active");
+    renderMonthly();
+  }else if(view === "overall"){
+    document.getElementById("viewOverall").classList.add("active");
+    renderOverall();
+  }
+
+  // Update nav buttons
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("nav" + view.charAt(0).toUpperCase() + view.slice(1)).classList.add("active");
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function changeWeek(amount){
+  weekOffset += amount;
+  renderWeekly();
+}
+
+function changeMonthView(amount){
+  monthViewOffset += amount;
+  renderMonthly();
+}
+
+
+/* =========================================================
+   WEEKLY VIEW RENDER
+========================================================= */
+
+function renderWeekly(){
+
+  const days = getWeekDates(weekOffset);
+  const start = days[0];
+  const end = days[6];
+
+  // Week label
+  const fmtShort = new Intl.DateTimeFormat("en-US", { month:"short", day:"numeric" });
+  const fmtMonth = new Intl.DateTimeFormat("en-US", { month:"long", year:"numeric" });
+
+  document.getElementById("weekLabel").innerHTML =
+    fmtMonth.format(start) +
+    "<span>" + fmtShort.format(start) + " – " + fmtShort.format(end) + "</span>";
+
+  // Build habit cards
+  const container = document.getElementById("weeklyHabits");
+  container.innerHTML = "";
+
+  const habits = [
+    { type:"cal", name:"Cal Def", emoji:"🔥", colorClass:"cal" },
+    { type:"walk", name:"WALKING", emoji:"🚶", colorClass:"walk" }
+  ];
+
+  habits.forEach(habit => {
+
+    // Count for the week
+    let weekCount = 0;
+    days.forEach(d => {
+      const key = formatDate(d);
+      if(data.days[key] && data.days[key][habit.type]) weekCount++;
+    });
+
+    // Current streak for this habit
+    const streak = calculateStreak(habit.type);
+
+    // Today done?
+    const todayKey = formatDate(new Date());
+    const todayDone = data.days[todayKey] && data.days[todayKey][habit.type];
+
+    const card = document.createElement("div");
+    card.className = "habit-card";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "habit-header";
+
+    const titleArea = document.createElement("div");
+    titleArea.className = "habit-title-area";
+
+    const icon = document.createElement("div");
+    icon.className = "habit-icon " + habit.colorClass;
+    icon.textContent = habit.emoji;
+
+    const nameWrap = document.createElement("div");
+    const nameEl = document.createElement("div");
+    nameEl.className = "habit-name";
+    nameEl.textContent = habit.name;
+
+    const streakEl = document.createElement("div");
+    streakEl.className = "habit-streak";
+    streakEl.textContent = "🔥 " + weekCount + " Day" + (weekCount !== 1 ? "s" : "") + " this week";
+
+    nameWrap.appendChild(nameEl);
+    nameWrap.appendChild(streakEl);
+
+    titleArea.appendChild(icon);
+    titleArea.appendChild(nameWrap);
+
+    const check = document.createElement("div");
+    check.className = "habit-check " + (todayDone ? habit.colorClass : "empty");
+    check.textContent = todayDone ? "✓" : "";
+
+    header.appendChild(titleArea);
+    header.appendChild(check);
+    card.appendChild(header);
+
+    // Week circles
+    const weekDays = document.createElement("div");
+    weekDays.className = "week-days";
+
+    const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+    days.forEach((d, idx) => {
+      const key = formatDate(d);
+      const isDone = data.days[key] && data.days[key][habit.type];
+      const isToday_ = isToday(d);
+      const isFuture = d > new Date() && !isToday_;
+
+      const wrap = document.createElement("div");
+      wrap.className = "day-circle-wrap";
+
+      const label = document.createElement("div");
+      label.className = "day-circle-label";
+      // Display order: Mon first (idx 1 is Monday in our Sunday-start array)
+      // days[0] = Sunday, days[1] = Monday...
+      // We want Mon-Sun display: so remap
+      label.textContent = dayNames[idx === 0 ? 6 : idx - 1];
+
+      const circle = document.createElement("div");
+      circle.className = "day-circle";
+      if(isDone) circle.classList.add("done", habit.colorClass);
+      if(isToday_) circle.classList.add("today");
+      if(isFuture) circle.classList.add("future");
+      circle.textContent = d.getDate();
+
+      // Make circle clickable
+      circle.onclick = function(){
+        const keyClick = formatDate(d);
+        selectedDate = keyClick;
+        viewDate = new Date(d);
+        if(!data.days[keyClick]) data.days[keyClick] = {};
+        data.days[keyClick][habit.type] = !data.days[keyClick][habit.type];
+        if(!data.days[keyClick].cal && !data.days[keyClick].walk){
+          delete data.days[keyClick];
+        }
+        saveData();
+        renderAll();
+        autoPushCloud();
+      };
+
+      wrap.appendChild(label);
+      wrap.appendChild(circle);
+      weekDays.appendChild(wrap);
+    });
+
+    card.appendChild(weekDays);
+    container.appendChild(card);
+  });
+}
+
+
+/* =========================================================
+   MONTHLY VIEW RENDER
+========================================================= */
+
+function renderMonthly(){
+
+  // Determine which month
+  const base = new Date();
+  base.setMonth(base.getMonth() + monthViewOffset);
+  const year = base.getFullYear();
+  const month = base.getMonth();
+
+  const monthName = new Intl.DateTimeFormat("en-US",
+    { month:"long", year:"numeric" }).format(base);
+  document.getElementById("monthViewLabel").textContent = monthName;
+
+  const firstDay = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+
+  const container = document.getElementById("monthlyHabits");
+  container.innerHTML = "";
+
+  const habits = [
+    { type:"cal", name:"Cal Def", emoji:"🔥", colorClass:"cal" },
+    { type:"walk", name:"WALKING", emoji:"🚶", colorClass:"walk" }
+  ];
+
+  habits.forEach(habit => {
+
+    let monthCount = 0;
+    for(let day=1; day<=daysInMonth; day++){
+      const key = formatDate(new Date(year,month,day));
+      if(data.days[key] && data.days[key][habit.type]) monthCount++;
+    }
+
+    const streak = calculateStreak(habit.type);
+    const todayKey = formatDate(new Date());
+    const todayDone = data.days[todayKey] && data.days[todayKey][habit.type];
+
+    const card = document.createElement("div");
+    card.className = "habit-card";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "habit-header";
+
+    const titleArea = document.createElement("div");
+    titleArea.className = "habit-title-area";
+
+    const icon = document.createElement("div");
+    icon.className = "habit-icon " + habit.colorClass;
+    icon.textContent = habit.emoji;
+
+    const nameWrap = document.createElement("div");
+    const nameEl = document.createElement("div");
+    nameEl.className = "habit-name";
+    nameEl.textContent = habit.name;
+
+    const streakEl = document.createElement("div");
+    streakEl.className = "habit-streak";
+    streakEl.textContent = "🔥 " + monthCount + " Day" + (monthCount !== 1 ? "s" : "");
+
+    nameWrap.appendChild(nameEl);
+    nameWrap.appendChild(streakEl);
+
+    titleArea.appendChild(icon);
+    titleArea.appendChild(nameWrap);
+
+    const check = document.createElement("div");
+    check.className = "habit-check " + (todayDone ? habit.colorClass : "empty");
+    check.textContent = todayDone ? "✓" : "";
+
+    header.appendChild(titleArea);
+    header.appendChild(check);
+    card.appendChild(header);
+
+    // Month grid
+    const grid = document.createElement("div");
+    grid.className = "month-grid";
+
+    // Empty cells before day 1
+    for(let i=0;i<firstDay;i++){
+      const empty = document.createElement("div");
+      empty.className = "month-day-cell empty";
+      grid.appendChild(empty);
+    }
+
+    for(let day=1; day<=daysInMonth; day++){
+      const d = new Date(year,month,day);
+      const key = formatDate(d);
+      const isDone = data.days[key] && data.days[key][habit.type];
+
+      const cell = document.createElement("div");
+      cell.className = "month-day-cell";
+      if(isDone) cell.classList.add("done", habit.colorClass);
+      cell.textContent = day;
+
+      cell.onclick = function(){
+        selectedDate = key;
+        viewDate = new Date(d);
+        if(!data.days[key]) data.days[key] = {};
+        data.days[key][habit.type] = !data.days[key][habit.type];
+        if(!data.days[key].cal && !data.days[key].walk){
+          delete data.days[key];
+        }
+        saveData();
+        renderAll();
+        autoPushCloud();
+      };
+
+      grid.appendChild(cell);
+    }
+
+    card.appendChild(grid);
+    container.appendChild(card);
+  });
+}
+
+
+/* =========================================================
+   OVERALL VIEW RENDER
+========================================================= */
+
+function renderOverall(){
+
+  // Calorie
+  let calTotal = 0, walkTotal = 0, allDays = 0, bothDays = 0;
+  let calMonth = 0, walkMonth = 0;
+  let calWeek = 0, walkWeek = 0;
+
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const weekDays = getWeekDates(0).map(d => formatDate(d));
+
+  Object.keys(data.days).forEach(key => {
+    const rec = data.days[key] || {};
+    const d = parseDate(key);
+    const hasCal = !!rec.cal;
+    const hasWalk = !!rec.walk;
+
+    if(hasCal) calTotal++;
+    if(hasWalk) walkTotal++;
+    if(hasCal || hasWalk) allDays++;
+    if(hasCal && hasWalk) bothDays++;
+
+    if(d.getMonth() === thisMonth && d.getFullYear() === thisYear){
+      if(hasCal) calMonth++;
+      if(hasWalk) walkMonth++;
+    }
+
+    if(weekDays.includes(key)){
+      if(hasCal) calWeek++;
+      if(hasWalk) walkWeek++;
+    }
+  });
+
+  document.getElementById("ovCalTotal").textContent = calTotal;
+  document.getElementById("ovWalkTotal").textContent = walkTotal;
+  document.getElementById("ovAllDays").textContent = allDays;
+  document.getElementById("ovBothDays").textContent = bothDays;
+
+  document.getElementById("ovCalMonth").textContent = calMonth;
+  document.getElementById("ovWalkMonth").textContent = walkMonth;
+  document.getElementById("ovCalWeek").textContent = calWeek;
+  document.getElementById("ovWalkWeek").textContent = walkWeek;
+
+  // Streaks
+  const calStreak = calculateStreak("cal");
+  const walkStreak = calculateStreak("walk");
+  const calBest = calculateBestStreak("cal");
+  const walkBest = calculateBestStreak("walk");
+
+  document.getElementById("ovCalStreak").textContent = calStreak + " day" + (calStreak !== 1 ? "s" : "");
+  document.getElementById("ovWalkStreak").textContent = walkStreak + " day" + (walkStreak !== 1 ? "s" : "");
+  document.getElementById("ovCalBest").textContent = calBest + " day" + (calBest !== 1 ? "s" : "");
+  document.getElementById("ovWalkBest").textContent = walkBest + " day" + (walkBest !== 1 ? "s" : "");
+}
+
+
+/* =========================================================
+   STREAK CALCULATIONS
+========================================================= */
+
+function calculateStreak(type){
+  // Current streak ending today (or yesterday if today not done)
+  let streak = 0;
+  const d = new Date();
+  d.setHours(0,0,0,0);
+
+  // If today not done, start checking from yesterday
+  const todayKey = formatDate(d);
+  if(!(data.days[todayKey] && data.days[todayKey][type])){
+    d.setDate(d.getDate() - 1);
+  }
+
+  while(true){
+    const key = formatDate(d);
+    if(data.days[key] && data.days[key][type]){
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }else{
+      break;
+    }
+  }
+
+  return streak;
+}
+
+function calculateBestStreak(type){
+  let best = 0;
+  let current = 0;
+
+  const keys = Object.keys(data.days)
+    .filter(k => data.days[k] && data.days[k][type])
+    .sort();
+
+  if(keys.length === 0) return 0;
+
+  let prevDate = null;
+
+  keys.forEach(key => {
+    const d = parseDate(key);
+    if(prevDate){
+      const diff = Math.round((d - prevDate) / (1000 * 60 * 60 * 24));
+      if(diff === 1){
+        current++;
+      }else{
+        current = 1;
+      }
+    }else{
+      current = 1;
+    }
+    if(current > best) best = current;
+    prevDate = d;
+  });
+
+  return best;
+}
+
+
+/* =========================================================
+   LOGIN UI
+========================================================= */
+
+function switchTab(mode){
+  authMode = mode;
+
+  const tabLogin = document.getElementById("tabLogin");
+  const tabRegister = document.getElementById("tabRegister");
+  const mainBtn = document.getElementById("mainBtn");
+  const title = document.getElementById("loginTitle");
+  const desc = document.getElementById("loginDesc");
+
+  if(mode === "login"){
+    tabLogin.classList.add("active");
+    tabRegister.classList.remove("active");
+    mainBtn.textContent = "🔐 Login";
+    title.textContent = "Welcome Back";
+    desc.innerHTML = 'Mag-login gamit ang <b>username</b> at password. Isang beses lang — hindi mo na kailangang mag-login ulit.';
+  }else{
+    tabRegister.classList.add("active");
+    tabLogin.classList.remove("active");
+    mainBtn.textContent = "✨ Create Account";
+    title.textContent = "Create Account";
+    desc.innerHTML = 'Gumawa ng <b>username</b> at password. Gamitin ang parehong login sa ibang device para mag-sync ang progress mo.';
+  }
+
+  showLoginError("");
+}
+
+
+function showLoginError(message){
+  document.getElementById("loginError").textContent = message;
+}
+
+
+function showLoginScreen(){
+  document.getElementById("loginScreen").classList.remove("hidden");
+  document.getElementById("logoutBtn").classList.add("hidden");
+  document.getElementById("userChip").classList.add("hidden");
+}
+
+
+function hideLoginScreen(username){
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("logoutBtn").classList.remove("hidden");
+  document.getElementById("userChip").classList.remove("hidden");
+  document.getElementById("userChipName").textContent = username;
+}
+
+
+/* =========================================================
+   SUBMIT (Login or Register)
+========================================================= */
+
+async function handleSubmit(){
+  if(!firebaseReady){
+    showLoginError("Firebase is not configured.");
+    return;
+  }
+
+  const rawUsername = document.getElementById("loginUsername").value;
+  const password = document.getElementById("loginPassword").value;
+  const username = cleanUsername(rawUsername);
+
+  const usernameError = validateUsername(username);
+  if(usernameError){
+    showLoginError(usernameError);
+    return;
+  }
+
+  if(!password || password.length < 6){
+    showLoginError("Password must be at least 6 characters.");
+    return;
+  }
+
+  showLoginError("");
+  const email = usernameToEmail(username);
+
+  try{
+    if(authMode === "login"){
+      try{
+        await auth.signInWithEmailAndPassword(email, password);
+      }catch(loginError){
+        if(loginError.code === "auth/user-not-found"){
+          showLoginError("Account not found. Creating new account...");
+          await auth.createUserWithEmailAndPassword(email, password);
+        }else{
+          throw loginError;
+        }
+      }
+    }else{
+      await auth.createUserWithEmailAndPassword(email, password);
+    }
+  }catch(error){
+    console.error(error);
+    let msg = error.message;
+    if(error.code === "auth/wrong-password") msg = "Mali ang password. Subukan ulit.";
+    else if(error.code === "auth/email-already-in-use") msg = "Username taken na. Pumili ng iba.";
+    else if(error.code === "auth/invalid-email") msg = "Invalid username format.";
+    else if(error.code === "auth/too-many-requests") msg = "Masyadong maraming attempts. Subukan ulit mamaya.";
+    showLoginError(msg);
+  }
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+async function logoutAccount(){
+  if(!firebaseReady) return;
+  const confirmLogout = confirm("Sigurado ka bang gusto mong mag-logout?");
+  if(!confirmLogout) return;
+
+  if(cloudListener){
+    try{ cloudListener.off(); }catch(e){}
+    cloudListener = null;
+  }
+
+  localStorage.removeItem(USERNAME_KEY);
+  localStorage.removeItem(DATA_KEY);
+
+  try{
+    await auth.signOut();
+  }catch(error){
+    console.error(error);
+  }
+}
+
+
+/* =========================================================
+   AUTH STATE
+========================================================= */
+
+if(firebaseReady){
+  auth.onAuthStateChanged(async function(user){
+    if(user){
+      currentUser = user;
+      const email = user.email || "";
+      const username = email.split("@")[0] || "user";
+      localStorage.setItem(USERNAME_KEY, username);
+      hideLoginScreen(username);
+
+      showSyncIndicator(true);
+      await loadCloudData();
+      attachCloudListener();
+      showSyncIndicator(false);
+      showToast("✅ Logged in as " + username);
+    }else{
+      currentUser = null;
+      showLoginScreen();
+      const savedUsername = localStorage.getItem(USERNAME_KEY);
+      if(savedUsername){
+        document.getElementById("loginUsername").value = savedUsername;
+      }
+    }
+    renderAll();
+  });
+}else{
+  document.getElementById("loginScreen").classList.add("hidden");
+  showToast("⚠️ Firebase not configured");
+}
+
+
+/* =========================================================
+   CLOUD REF & SYNC
+========================================================= */
+
+function getCloudRef(){
+  if(!firebaseReady || !currentUser) return null;
+  return db.ref("users/" + currentUser.uid);
+}
+
+async function loadCloudData(){
+  const ref = getCloudRef();
+  if(!ref) return;
+  try{
+    const snapshot = await ref.once("value");
+    const cloud = snapshot.val();
+    if(cloud && cloud.days){
+      data = { days: cloud.days };
+      saveData();
+      renderAll();
+    }else{
+      await pushCloudData(true);
+    }
+  }catch(error){
+    console.error("Load cloud error:", error);
+  }
+}
+
+async function pushCloudData(silent=false){
+  const ref = getCloudRef();
+  if(!ref) return;
+  try{
+    if(!silent) showSyncIndicator(true);
+    await ref.update({
+      days: data.days,
+      updatedAt: Date.now()
+    });
+  }catch(error){
+    console.error("Push cloud error:", error);
+    if(!silent) showToast("❌ Upload failed");
+  }finally{
+    if(!silent) showSyncIndicator(false);
+  }
+}
+
+function autoPushCloud(){
+  if(firebaseReady && currentUser){
+    isSyncing = true;
+    pushCloudData(true).finally(() => {
+      setTimeout(() => { isSyncing = false; }, 500);
+    });
+  }
+}
+
+function attachCloudListener(){
+  const ref = getCloudRef();
+  if(!ref) return;
+  if(cloudListener){
+    try{ cloudListener.off(); }catch(e){}
+  }
+  cloudListener = ref;
+
+  ref.on("value", function(snapshot){
+    if(isSyncing) return;
+    const cloud = snapshot.val();
+    if(!cloud || !cloud.days) return;
+
+    const localStr = JSON.stringify(data.days);
+    const cloudStr = JSON.stringify(cloud.days);
+    if(localStr !== cloudStr){
+      data = { days: cloud.days };
+      saveData();
+      renderAll();
+    }
+  }, function(error){
+    console.error("Listener error:", error);
+  });
+}
+
+
+/* =========================================================
+   CALENDAR (TODAY VIEW)
+========================================================= */
+
+function renderCalendar(){
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+
+  const monthName = new Intl.DateTimeFormat("en-US",
+    { month:"long", year:"numeric" }).format(viewDate);
+
+  document.getElementById("monthName").textContent = monthName;
+
+  const calendar = document.getElementById("calendar");
+  calendar.innerHTML = "";
+
+  for(let i=0;i<firstDay;i++){
+    const empty = document.createElement("div");
+    empty.className = "day empty";
+    calendar.appendChild(empty);
+  }
+
+  for(let day=1;day<=daysInMonth;day++){
+    const date = new Date(year,month,day);
+    const key = formatDate(date);
+    const record = data.days[key] || {};
+
+    const cell = document.createElement("div");
+    cell.className = "day";
+
+    if(isToday(date)) cell.classList.add("today");
+    if(key === selectedDate) cell.classList.add("selected");
+
+    cell.onclick = function(){
+      selectedDate = key;
+      renderAll();
+    };
+
+    const number = document.createElement("div");
+    number.className = "day-number";
+    number.textContent = day;
+    cell.appendChild(number);
+
+    if(isToday(date)){
+      const today = document.createElement("div");
+      today.className = "today-label";
+      today.textContent = "TODAY";
+      cell.appendChild(today);
+    }
+
+    const marks = document.createElement("div");
+    marks.className = "marks";
+
+    if(record.cal){
+      const calMark = document.createElement("div");
+      calMark.className = "mark cal";
+      marks.appendChild(calMark);
+    }
+    if(record.walk){
+      const walkMark = document.createElement("div");
+      walkMark.className = "mark walk";
+      marks.appendChild(walkMark);
+    }
+
+    cell.appendChild(marks);
+    calendar.appendChild(cell);
+  }
+}
+
+
+function changeMonth(amount){
+  viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth()+amount, 1);
+  renderCalendar();
+}
+
+
+/* =========================================================
+   SELECTED DATE (TODAY VIEW)
+========================================================= */
+
+function renderSelected(){
+
+  const date = parseDate(selectedDate);
+  const formatted = new Intl.DateTimeFormat("en-US",
+    { month:"long", day:"numeric", year:"numeric" }).format(date);
+
+  document.getElementById("selectedDateText").textContent = formatted;
+  document.getElementById("selectedTodayText").textContent = isToday(date) ? "Today" : "";
+
+  const record = data.days[selectedDate] || {};
+
+  const calButton = document.getElementById("calButton");
+  const walkButton = document.getElementById("walkButton");
+  const calCheck = document.getElementById("calCheck");
+  const walkCheck = document.getElementById("walkCheck");
+  const calStatus = document.getElementById("calStatus");
+  const walkStatus = document.getElementById("walkStatus");
+
+  if(record.cal){
+    calButton.classList.add("active");
+    calCheck.textContent = "✓";
+    calStatus.textContent = "Logged";
+  }else{
+    calButton.classList.remove("active");
+    calCheck.textContent = "";
+    calStatus.textContent = "Not logged";
+  }
+
+  if(record.walk){
+    walkButton.classList.add("active");
+    walkCheck.textContent = "✓";
+    walkStatus.textContent = "Logged";
+  }else{
+    walkButton.classList.remove("active");
+    walkCheck.textContent = "";
+    walkStatus.textContent = "Not logged";
+  }
+}
+
+
+/* =========================================================
+   TOGGLE CAL / WALK
+========================================================= */
+
+function toggleDay(type){
+  if(!data.days[selectedDate]){
+    data.days[selectedDate] = {};
+  }
+  data.days[selectedDate][type] = !data.days[selectedDate][type];
+
+  const record = data.days[selectedDate];
+  if(!record.cal && !record.walk){
+    delete data.days[selectedDate];
+  }
+
+  saveData();
+  renderAll();
+  autoPushCloud();
+}
+
+
+/* =========================================================
+   TOTALS
+========================================================= */
+
+function calculateTotals(){
+  let cal = 0, walk = 0, totalDays = 0;
+  Object.keys(data.days).forEach(key => {
+    const item = data.days[key] || {};
+    if(item.cal) cal++;
+    if(item.walk) walk++;
+    if(item.cal || item.walk) totalDays++;
+  });
+  document.getElementById("calTotal").textContent = cal;
+  document.getElementById("walkTotal").textContent = walk;
+  document.getElementById("dayTotal").textContent = "Day " + totalDays;
+}
+
+
+/* =========================================================
+   RENDER ALL
+========================================================= */
+
+function renderAll(){
+  renderCalendar();
+  renderSelected();
+  calculateTotals();
+
+  // Refresh current view
+  if(currentView === "weekly") renderWeekly();
+  else if(currentView === "monthly") renderMonthly();
+  else if(currentView === "overall") renderOverall();
+}
+
+
+/* =========================================================
+   SWIPE CALENDAR
+========================================================= */
+
+const calendar = document.getElementById("calendar");
+
+calendar.addEventListener("touchstart", function(event){
+  touchStartX = event.changedTouches[0].screenX;
+}, {passive:true});
+
+calendar.addEventListener("touchend", function(event){
+  const touchEndX = event.changedTouches[0].screenX;
+  const distance = touchEndX - touchStartX;
+  if(Math.abs(distance) < 60) return;
+  if(distance < 0) changeMonth(1);
+  else changeMonth(-1);
+}, {passive:true});
+
+
+/* =========================================================
+   ENTER KEY SUBMIT
+========================================================= */
+
+document.getElementById("loginPassword").addEventListener("keydown", function(e){
+  if(e.key === "Enter") handleSubmit();
+});
+
+document.getElementById("loginUsername").addEventListener("keydown", function(e){
+  if(e.key === "Enter") document.getElementById("loginPassword").focus();
+});
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+renderAll();
+
+</script>
+
+</body>
+</html>
