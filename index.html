@@ -18,13 +18,34 @@
   --orange:#F97316;--orange2:#FB923C;--teal:#14B8A6;--teal2:#2DD4BF;--danger:#EF4444;
   --shadow:0 8px 25px rgba(0,0,0,.25);
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{margin:0;padding:0;width:100%;min-height:100%;
+
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
+/* Allow selection sa input fields lang */
+input, textarea{
+  -webkit-user-select:text;
+  -moz-user-select:text;
+  -ms-user-select:text;
+  user-select:text;
+}
+
+html,body{
+  margin:0;padding:0;width:100%;min-height:100%;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  background:var(--bg);color:var(--text);}
+  background:var(--bg);color:var(--text);
+}
 body{padding:14px;padding-bottom:100px;}
 button,input{font:inherit;}
 button{cursor:pointer;}
+
 .app{width:100%;max-width:600px;margin:auto;}
 
 /* HEADER */
@@ -52,11 +73,25 @@ button{cursor:pointer;}
 .login-icon{font-size:48px;margin-bottom:8px;}
 .login-title{font-size:22px;font-weight:800;margin:0 0 6px;}
 .login-desc{color:var(--muted);font-size:13px;margin:0 0 20px;line-height:1.5;}
-.login-input{width:100%;background:var(--surface2);color:var(--text);
+
+/* FORCE CAPS LOCK sa inputs */
+.login-input{
+  width:100%;background:var(--surface2);color:var(--text);
   border:1px solid var(--border);border-radius:12px;padding:13px;
   outline:none;margin-bottom:10px;text-align:center;
-  text-transform:none;-webkit-text-security:none;}
+  text-transform:uppercase;
+  letter-spacing:2px;
+  font-weight:700;
+  font-size:15px;
+}
+.login-input::placeholder{
+  text-transform:none;
+  letter-spacing:0;
+  font-weight:400;
+  font-size:13px;
+}
 .login-input:focus{border-color:var(--purple2);}
+
 .login-btn{width:100%;border:none;border-radius:12px;padding:13px;
   font-weight:800;font-size:14px;margin-bottom:8px;}
 .login-btn.primary{background:var(--purple);color:#fff;}
@@ -253,16 +288,17 @@ button{cursor:pointer;}
     </div>
 
     <input class="login-input" id="loginUsername" type="text"
-      placeholder="Username" autocomplete="username"
-      autocapitalize="off" autocorrect="off" spellcheck="false"
+      placeholder="USERNAME" autocomplete="username"
+      autocapitalize="characters" autocorrect="off" spellcheck="false"
       inputmode="text" name="username">
 
     <input class="login-input" id="loginPassword" type="password"
-      placeholder="Password (min 6 chars)" autocomplete="current-password"
-      autocapitalize="off" spellcheck="false" name="password">
+      placeholder="PASSWORD (MIN 6 CHARS)" autocomplete="current-password"
+      autocapitalize="characters" autocorrect="off" spellcheck="false"
+      name="password">
 
     <button class="login-btn primary" id="mainBtn" onclick="handleSubmit()">
-      🔐 Login
+      🔐 LOGIN
     </button>
 
     <div class="login-error" id="loginError"></div>
@@ -498,11 +534,14 @@ function getWeekDates(offset){
   const days=[]; for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); days.push(d); }
   return days;
 }
-function cleanUsername(r){ return r.trim().toLowerCase(); }
+
+/* FORCE UPPERCASE USERNAME */
+function cleanUsername(r){ return r.trim().toUpperCase(); }
+
 function validateUsername(u){
   if(u.length<3) return "Username must be at least 3 characters.";
   if(u.length>20) return "Username must be 20 characters or less.";
-  if(!/^[a-z0-9_]+$/.test(u)) return "Username can only contain letters, numbers, and underscore (_).";
+  if(!/^[A-Z0-9_]+$/.test(u)) return "Username can only contain LETTERS, numbers, and underscore (_).";
   return null;
 }
 function usernameToEmail(u){ return u+DOMAIN; }
@@ -721,11 +760,11 @@ function switchTab(mode){
   const d=document.getElementById("loginDesc");
   if(mode==="login"){
     tl.classList.add("active"); tr.classList.remove("active");
-    mb.textContent="🔐 Login"; t.textContent="Welcome Back";
+    mb.textContent="🔐 LOGIN"; t.textContent="Welcome Back";
     d.innerHTML='Mag-login gamit ang <b>username</b> at password. Isang beses lang — hindi mo na kailangang mag-login ulit.';
   }else{
     tr.classList.add("active"); tl.classList.remove("active");
-    mb.textContent="✨ Create Account"; t.textContent="Create Account";
+    mb.textContent="✨ CREATE ACCOUNT"; t.textContent="Create Account";
     d.innerHTML='Gumawa ng <b>username</b> at password. Gamitin ang parehong login sa ibang device para mag-sync ang progress mo.';
   }
   showLoginError("");
@@ -747,10 +786,10 @@ async function handleSubmit(){
   if(!firebaseReady){ showLoginError("Firebase not configured."); return; }
   const rawU = document.getElementById("loginUsername").value;
   const pw = document.getElementById("loginPassword").value;
-  const u = cleanUsername(rawU);
+  const u = cleanUsername(rawU);  // FORCE UPPERCASE
   const uErr = validateUsername(u);
   if(uErr){ showLoginError(uErr); return; }
-  if(!pw || pw.length<6){ showLoginError("Password must be at least 6 characters."); return; }
+  if(!pw || pw.length<6){ showLoginError("PASSWORD must be at least 6 characters."); return; }
   showLoginError("");
   const email = usernameToEmail(u);
   try{
@@ -768,9 +807,9 @@ async function handleSubmit(){
   }catch(e){
     console.error(e);
     let msg=e.message;
-    if(e.code==="auth/wrong-password") msg="Mali ang password. Subukan ulit.";
-    else if(e.code==="auth/email-already-in-use") msg="Username taken na. Pumili ng iba.";
-    else if(e.code==="auth/invalid-email") msg="Invalid username format.";
+    if(e.code==="auth/wrong-password") msg="Mali ang PASSWORD. Subukan ulit.";
+    else if(e.code==="auth/email-already-in-use") msg="USERNAME taken na. Pumili ng iba.";
+    else if(e.code==="auth/invalid-email") msg="Invalid USERNAME format.";
     else if(e.code==="auth/too-many-requests") msg="Masyadong maraming attempts. Subukan ulit mamaya.";
     showLoginError(msg);
   }
