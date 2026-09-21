@@ -411,7 +411,7 @@ button{cursor:pointer;font-family:inherit}
 <script>
 const fc={apiKey:"AIzaSyDD9MiVmqQBraFG4o8Pum02bW8LlaEtgss",authDomain:"myhabittracker-cd56b.firebaseapp.com",databaseURL:"https://myhabittracker-cd56b-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"myhabittracker-cd56b",storageBucket:"myhabittracker-cd56b.firebasestorage.app",messagingSenderId:"114281951002",appId:"1:114281951002:web:1e9d951d15c2bf2e0e46a3"};
 let fbR=false,db=null,au=null,cu=null,cl=null,syncing=false,online=navigator.onLine;
-try{firebase.initializeApp(fc);db=firebase.database();au=firebase.auth();fbR=true;console.log("✅ Firebase OK")}catch(e){console.log("❌",e)}
+try{if(typeof firebase==="undefined")throw new Error("Firebase unavailable offline");firebase.initializeApp(fc);db=firebase.database();au=firebase.auth();fbR=true;console.log("✅ Firebase OK")}catch(e){console.log("📴 Firebase unavailable; offline mode",e.message)}
 const DK="mp_v5",UK="mp_user",TK="mp_theme",VK="mp_vib",SK="mp_snd",DM="@myprogress.app";
 let dat=ld(),vd=new Date(),sd=fd(new Date()),tsx=0,am="login",cv="today",wo=0,mvo=0,md=null;
 let vib=localStorage.getItem(VK)!=="off",snd=localStorage.getItem(SK)==="on";
@@ -491,7 +491,7 @@ function cM(a){vd=new Date(vd.getFullYear(),vd.getMonth()+a,1);rCal();vib2(5)}
 function uRing(){const n=new Date();const dIM=new Date(n.getFullYear(),n.getMonth()+1,0).getDate();let cM2=0,wM2=0;Object.keys(dat.days).forEach(k=>{const r=dat.days[k]||{},d=pd(k);if(d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear()){if(r.cal)cM2++;if(r.walk)wM2++}});const mx=107;const cp=Math.round(cM2/dIM*mx);const wp=Math.round(wM2/dIM*mx);document.getElementById("rc").setAttribute("stroke-dasharray",cp+" "+mx);document.getElementById("rw").setAttribute("stroke-dasharray",wp+" "+mx)}
 function cTot(){let c=0,w=0;Object.keys(dat.days).forEach(k=>{const i=dat.days[k]||{};if(i.cal)c++;if(i.walk)w++});document.getElementById("ct").textContent=c;document.getElementById("wt").textContent=w}
 function rA(){rCal();cTot();uRing();if(cv==="weekly")rW();else if(cv==="monthly")rM();else if(cv==="overall")rO()}
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(e=>console.warn("Offline cache unavailable",e)))}
+if("serviceWorker" in navigator){window.addEventListener("load",async()=>{try{const r=await navigator.serviceWorker.register("./sw.js",{scope:"./"});if(r.waiting)r.waiting.postMessage({type:"SKIP_WAITING"})}catch(e){console.warn("Offline cache unavailable",e)}})}
 const cal=document.getElementById("cal");
 cal.addEventListener("touchstart",function(e){tsx=e.changedTouches[0].screenX},{passive:true});
 cal.addEventListener("touchend",function(e){const dx=e.changedTouches[0].screenX-tsx;if(Math.abs(dx)<60)return;if(dx<0)cM(1);else cM(-1)},{passive:true});
