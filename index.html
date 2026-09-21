@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#0F172A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>My Progress</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -408,13 +410,16 @@ button{cursor:pointer;font-family:inherit}
 
 <script>
 const fc={apiKey:"AIzaSyDD9MiVmqQBraFG4o8Pum02bW8LlaEtgss",authDomain:"myhabittracker-cd56b.firebaseapp.com",databaseURL:"https://myhabittracker-cd56b-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"myhabittracker-cd56b",storageBucket:"myhabittracker-cd56b.firebasestorage.app",messagingSenderId:"114281951002",appId:"1:114281951002:web:1e9d951d15c2bf2e0e46a3"};
-let fbR=false,db=null,au=null,cu=null,cl=null,syncing=false;
+let fbR=false,db=null,au=null,cu=null,cl=null,syncing=false,online=navigator.onLine;
 try{firebase.initializeApp(fc);db=firebase.database();au=firebase.auth();fbR=true;console.log("✅ Firebase OK")}catch(e){console.log("❌",e)}
 const DK="mp_v5",UK="mp_user",TK="mp_theme",VK="mp_vib",SK="mp_snd",DM="@myprogress.app";
 let dat=ld(),vd=new Date(),sd=fd(new Date()),tsx=0,am="login",cv="today",wo=0,mvo=0,md=null;
 let vib=localStorage.getItem(VK)!=="off",snd=localStorage.getItem(SK)==="on";
 function ld(){try{const s=localStorage.getItem(DK);if(s){const p=JSON.parse(s);if(p&&p.days)return p}}catch(e){}return{days:{}}}
 function sd2(){localStorage.setItem(DK,JSON.stringify(dat))}
+function markOffline(){online=navigator.onLine;if(online&&cu)aPC()}
+window.addEventListener("online",markOffline);
+window.addEventListener("offline",()=>{online=false;sT("📴 Offline mode — saved on this device")});
 function p2(n){return String(n).padStart(2,"0")}
 function fd(d){return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
 function pd(s){const p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
@@ -477,14 +482,15 @@ async function lout(){if(!fbR)return;if(!confirm("Mag-logout?"))return;if(cl){tr
 if(fbR){au.onAuthStateChanged(async function(u){if(u){cu=u;const em=u.email||"";const un=em.split("@")[0]||"user";localStorage.setItem(UK,un);hLS(un);sSI(true);await lCD();atL();loadAchievements();sSI(false);sT("✅ Logged in: "+un)}else{cu=null;sLS();const su=localStorage.getItem(UK);if(su)document.getElementById("lu").value=su}rA()})}else{document.getElementById("ls").classList.add("hidden");sT("⚠️ Firebase not configured")}
 function gCR(){if(!fbR||!cu)return null;return db.ref("users/"+cu.uid)}
 async function lCD(){const r=gCR();if(!r)return;try{const s=await r.once("value");const c=s.val();if(c&&c.days){dat={days:c.days};sd2();rA()}else await pCD(true)}catch(e){console.error(e)}}
-async function pCD(sil){const r=gCR();if(!r)return;try{if(!sil)sSI(true);await r.update({days:dat.days,updatedAt:Date.now()})}catch(e){console.error(e);if(!sil)sT("❌ Failed")}finally{if(!sil)sSI(false)}}
-function aPC(){if(fbR&&cu){syncing=true;pCD(true).finally(()=>setTimeout(()=>syncing=false,500))}}
+async function pCD(sil){const r=gCR();if(!r||!navigator.onLine){if(!sil)sT("📴 Saved offline; will sync when online");return}try{if(!sil)sSI(true);await r.update({days:dat.days,updatedAt:Date.now()})}catch(e){console.error(e);if(!sil)sT("❌ Failed — kept offline")}finally{if(!sil)sSI(false)}}
+function aPC(){if(fbR&&cu&&navigator.onLine){syncing=true;pCD(true).finally(()=>setTimeout(()=>syncing=false,500))}}
 function atL(){const r=gCR();if(!r)return;if(cl){try{cl.off()}catch(e){}}cl=r;r.on("value",function(s){if(syncing)return;const c=s.val();if(!c||!c.days)return;if(JSON.stringify(dat.days)!==JSON.stringify(c.days)){dat={days:c.days};sd2();rA()}},function(e){console.error(e)})}
 function rCal(){const y=vd.getFullYear(),m=vd.getMonth();const fD=new Date(y,m,1).getDay();const dIM=new Date(y,m+1,0).getDate();const mn=new Intl.DateTimeFormat("en-US",{month:"long",year:"numeric"}).format(vd);document.getElementById("mn").textContent=mn;const c=document.getElementById("cal");c.innerHTML="";for(let i=0;i<fD;i++){const e=document.createElement("div");e.className="dy empty";c.appendChild(e)}for(let dy=1;dy<=dIM;dy++){const d=new Date(y,m,dy),k=fd(d);const r=dat.days[k]||{};const iB=r.cal&&r.walk;const cl=document.createElement("div");cl.className="dy";if(isT(d))cl.classList.add("today");if(k===sd)cl.classList.add("sel");if(iB)cl.classList.add("both");cl.onclick=function(){sd=k;oM(k)};const nm=document.createElement("div");nm.className="dn";nm.textContent=dy;cl.appendChild(nm);if(isT(d)){const tl=document.createElement("div");tl.className="tl";tl.textContent="TODAY";cl.appendChild(tl)}const mk=document.createElement("div");mk.className="mk";if(r.cal){const mm=document.createElement("div");mm.className="mr cal";mk.appendChild(mm)}if(r.walk){const mm=document.createElement("div");mm.className="mr walk";mk.appendChild(mm)}cl.appendChild(mk);c.appendChild(cl)}}
 function cM(a){vd=new Date(vd.getFullYear(),vd.getMonth()+a,1);rCal();vib2(5)}
 function uRing(){const n=new Date();const dIM=new Date(n.getFullYear(),n.getMonth()+1,0).getDate();let cM2=0,wM2=0;Object.keys(dat.days).forEach(k=>{const r=dat.days[k]||{},d=pd(k);if(d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear()){if(r.cal)cM2++;if(r.walk)wM2++}});const mx=107;const cp=Math.round(cM2/dIM*mx);const wp=Math.round(wM2/dIM*mx);document.getElementById("rc").setAttribute("stroke-dasharray",cp+" "+mx);document.getElementById("rw").setAttribute("stroke-dasharray",wp+" "+mx)}
 function cTot(){let c=0,w=0;Object.keys(dat.days).forEach(k=>{const i=dat.days[k]||{};if(i.cal)c++;if(i.walk)w++});document.getElementById("ct").textContent=c;document.getElementById("wt").textContent=w}
 function rA(){rCal();cTot();uRing();if(cv==="weekly")rW();else if(cv==="monthly")rM();else if(cv==="overall")rO()}
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(e=>console.warn("Offline cache unavailable",e)))}
 const cal=document.getElementById("cal");
 cal.addEventListener("touchstart",function(e){tsx=e.changedTouches[0].screenX},{passive:true});
 cal.addEventListener("touchend",function(e){const dx=e.changedTouches[0].screenX-tsx;if(Math.abs(dx)<60)return;if(dx<0)cM(1);else cM(-1)},{passive:true});
