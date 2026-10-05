@@ -91,7 +91,7 @@ button{cursor:pointer;font-family:inherit}
 .mr{width:7px;height:7px;border-radius:50%}
 .mr.cal{background:var(--o2);box-shadow:0 0 6px rgba(251,146,60,.4)}
 .mr.walk{background:var(--t2);box-shadow:0 0 6px rgba(45,212,191,.4)}
-.mr.resistance{background:var(--p2);box-shadow:0 0 6px rgba(139,92,246,.4)}
+.mr.resistance{background:#FBBF24;box-shadow:0 0 6px rgba(251,191,36,.7)}
 .hb{text-align:center;color:var(--mt);font-size:11px;margin-top:12px;padding:12px;background:var(--sf);border:1px dashed var(--bd);border-radius:14px;line-height:1.5}
 .hb b{color:var(--p2)}
 .vw{display:none;overflow:visible;height:auto}
@@ -350,7 +350,7 @@ button{cursor:pointer;font-family:inherit}
 <div class="ot">📊 Combined</div>
 <div class="sr"><span class="slb">Total active days</span><span class="sv" id="oA">0</span></div>
 <div class="sr"><span class="slb">Both logged same day</span><span class="sv" id="oB">0</span></div>
-<div class="sr"><span class="slb">All 3 logged (perfect days)</span><span class="sv" id="oP">0</span></div>
+<div class="sr"><span class="slb">All 3 logged</span><span class="sv" id="oP">0</span></div>
 </div>
 </div>
 
@@ -474,11 +474,12 @@ function conf(){const c=["#7C3AED","#F97316","#14B8A6","#FB923C","#2DD4BF","#8B5
 function oM(dk){md=dk;const d=pd(dk);document.getElementById("mdD").textContent=d.getDate();document.getElementById("mdF").textContent=new Intl.DateTimeFormat("en-US",{month:"long",day:"numeric",year:"numeric"}).format(d);const t=document.getElementById("mdT");t.innerHTML=isT(d)?'<span class="tt">TODAY</span>':'';uMS();document.getElementById("mo").classList.add("show");vib2(5)}
 function cM2(e){if(e&&e.target!==e.currentTarget)return;document.getElementById("mo").classList.remove("show");md=null}
 function uMS(){if(!md)return;const r=dat.days[md]||{};const co=document.getElementById("mCo"),cc=document.getElementById("mCc"),cs=document.getElementById("mCs");const wo2=document.getElementById("mWo"),wc=document.getElementById("mWc"),ws=document.getElementById("mWs");const ro=document.getElementById("mRo"),rc=document.getElementById("mRc"),rs=document.getElementById("mRs");if(r.cal){co.classList.add("sel");cc.textContent="✓";cs.textContent="Done"}else{co.classList.remove("sel");cc.textContent="";cs.textContent="Not logged"}if(r.walk){wo2.classList.add("sel");wc.textContent="✓";ws.textContent="Done"}else{wo2.classList.remove("sel");wc.textContent="";ws.textContent="Not logged"}if(r.resistance){ro.classList.add("sel");rc.textContent="✓";rs.textContent="Done"}else{ro.classList.remove("sel");rc.textContent="";rs.textContent="Not logged"}}
-function mTog(t){if(!md)return;vib2(15);pSnd();const before=dat.days[md]||{};const wasPerfect=before.cal&&before.walk&&before.resistance;if(!dat.days[md])dat.days[md]={};dat.days[md][t]=!dat.days[md][t];const r=dat.days[md];if(!r.cal&&!r.walk&&!r.resistance)delete dat.days[md];const now=dat.days[md]||{};if(now.cal&&now.walk&&now.resistance&&!wasPerfect){conf();sT("🎉 PERFECT DAY! All 3 done!")}sd2();uMS();rA();aPC()}
+function isQualifyingDay(record){return !!(record&&record.cal&&(record.walk||record.resistance))}
+function mTog(t){if(!md)return;vib2(15);pSnd();const before=dat.days[md]||{};const wasQualified=isQualifyingDay(before);if(!dat.days[md])dat.days[md]={};dat.days[md][t]=!dat.days[md][t];const r=dat.days[md];if(!r.cal&&!r.walk&&!r.resistance)delete dat.days[md];const now=dat.days[md]||{};if(isQualifyingDay(now)&&!wasQualified){conf();sT("🎉 CAL DEF + EXERCISE DAY!")}sd2();uMS();rA();aPC()}
 function oS(){document.getElementById("sp").classList.add("show");document.getElementById("so").classList.add("show");rH()}
 function cS(){document.getElementById("sp").classList.remove("show");document.getElementById("so").classList.remove("show")}
 function rH(){const l=document.getElementById("hl");l.innerHTML="";const k=Object.keys(dat.days).sort().reverse().slice(0,10);if(k.length===0){l.innerHTML='<div style="text-align:center;color:var(--mt);font-size:12px;padding:20px;">No activity yet</div>';return}k.forEach(kk=>{const r=dat.days[kk]||{};const d=pd(kk);const it=document.createElement("div");it.className="hit";const ds=new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric"}).format(d);const cb=r.cal?'<span class="hbm">🔥</span>':'';const wb=r.walk?'<span class="hbm">🚶</span>':'';const rb=r.resistance?'<span class="hbm">🏋️</span>':'';it.innerHTML=`<span class="hdt">${ds}</span><span class="hbd">${cb}${wb}${rb}</span>`;l.appendChild(it)})}
-function shP(){let ct=0,wt=0,rt=0,bd=0;Object.keys(dat.days).forEach(k=>{const r=dat.days[k]||{};if(r.cal)ct++;if(r.walk)wt++;if(r.resistance)rt++;if(r.cal&&r.walk&&r.resistance)bd++});const cs=cStreak("cal"),ws=cStreak("walk"),rs=cStreak("resistance");const t=`🏆 MY PROGRESS 🏆\n\n🔥 Calorie Deficit: ${ct} days\n🚶 Walking: ${wt} days\n🏋️ Resistance Training: ${rt} days\n⭐ Perfect days (all 3): ${bd}\n\n🔥 Current streaks:\n   Cal Def: ${cs} days\n   Walking: ${ws} days\n   Resistance: ${rs} days\n\n💪 Small steps every day!`;const copyText=function(){if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(t)}return Promise.reject()};copyText().then(()=>sT("📋 Copied!")).catch(()=>{try{if(window.median&&window.median.clipboard){window.median.clipboard.setText(t);sT("📋 Copied!");return}}catch(e){}const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();sT("📋 Copied!")});vib2(20)}
+function shP(){let ct=0,wt=0,rt=0,bd=0;Object.keys(dat.days).forEach(k=>{const r=dat.days[k]||{};if(r.cal)ct++;if(r.walk)wt++;if(r.resistance)rt++;if(isQualifyingDay(r))bd++});const cs=cStreak("cal"),ws=cStreak("walk"),rs=cStreak("resistance");const t=`🏆 MY PROGRESS 🏆\n\n🔥 Calorie Deficit: ${ct} days\n🚶 Walking: ${wt} days\n🏋️ Resistance Training: ${rt} days\n⭐ Cal + exercise days: ${bd}\n\n🔥 Current streaks:\n   Cal Def: ${cs} days\n   Walking: ${ws} days\n   Resistance: ${rs} days\n\n💪 Small steps every day!`;const copyText=function(){if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(t)}return Promise.reject()};copyText().then(()=>sT("📋 Copied!")).catch(()=>{try{if(window.median&&window.median.clipboard){window.median.clipboard.setText(t);sT("📋 Copied!");return}}catch(e){}const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();sT("📋 Copied!")});vib2(20)}
 function rst(){if(!confirm("⚠️ Burahin LAHAT ng data?"))return;if(!confirm("Last warning!"))return;dat={days:{}};sd2();rA();aPC();cS();sT("🗑️ Cleared")}
 function sV(v){cv=v;if(v!=="settings"){cS()}document.querySelectorAll(".vw").forEach(x=>x.classList.remove("act"));if(v==="today")document.getElementById("vT").classList.add("act");else if(v==="weekly"){document.getElementById("vW").classList.add("act");rW()}else if(v==="monthly"){document.getElementById("vM").classList.add("act");rM()}else if(v==="overall"){document.getElementById("vO").classList.add("act");rO()}document.querySelectorAll(".nb").forEach(b=>b.classList.remove("act"));const n=document.getElementById("n"+v.charAt(0).toUpperCase()+v.slice(1));if(n)n.classList.add("act");vib2(8);window.scrollTo({top:0,behavior:"smooth"})}
 function cW(a){wo+=a;rW();vib2(5)}
@@ -491,7 +492,7 @@ const defaultAchievements=[
 {i:"🌱",n:"First Step",type:"active",target:1},
 {i:"📅",n:"7 Day Streak",type:"streak",target:7},
 {i:"🗓️",n:"30 Day Streak",type:"streak",target:30},
-{i:"⭐",n:"10 Perfect Days",type:"perfect",target:10},
+{i:"⭐",n:"10 Cal + Exercise Days",type:"perfect",target:10},
 {i:"🔥",n:"50 Cal Days",type:"cal",target:50},
 {i:"🚶",n:"50 Walk Days",type:"walk",target:50},
 {i:"🏋️",n:"50 Resistance Days",type:"resistance",target:50},
@@ -500,7 +501,7 @@ const defaultAchievements=[
 {i:"👑",n:"Legend 100",type:"active",target:100}
 ];
 let achievementDefs=defaultAchievements;
-function gAch(){const vals=Object.values(dat.days);const tc=vals.filter(d=>d.cal).length;const tw=vals.filter(d=>d.walk).length;const tr=vals.filter(d=>d.resistance).length;const bd=vals.filter(d=>d.cal&&d.walk).length;const pd=vals.filter(d=>d.cal&&d.walk&&d.resistance).length;const cb=bStreak("cal");const wb=bStreak("walk");const rb=bStreak("resistance");const ta=tc+tw+tr;return achievementDefs.map(a=>{let value=0;if(a.type==="cal")value=tc;else if(a.type==="walk")value=tw;else if(a.type==="resistance")value=tr;else if(a.type==="both")value=bd;else if(a.type==="perfect")value=pd;else if(a.type==="streak")value=Math.max(cb,wb,rb);else value=ta;const target=Number(a.target||0);return{i:a.i||"🏆",n:a.n||a.name||a.title||"Achievement",target,value,u:value>=target}})}
+function gAch(){const vals=Object.values(dat.days);const tc=vals.filter(d=>d.cal).length;const tw=vals.filter(d=>d.walk).length;const tr=vals.filter(d=>d.resistance).length;const bd=vals.filter(d=>d.cal&&d.walk).length;const pd=vals.filter(isQualifyingDay).length;const cb=bStreak("cal");const wb=bStreak("walk");const rb=bStreak("resistance");const ta=tc+tw+tr;return achievementDefs.map(a=>{let value=0;if(a.type==="cal")value=tc;else if(a.type==="walk")value=tw;else if(a.type==="resistance")value=tr;else if(a.type==="both")value=bd;else if(a.type==="perfect")value=pd;else if(a.type==="streak")value=Math.max(cb,wb,rb);else value=ta;const target=Number(a.target||0);return{i:a.i||"🏆",n:a.n||a.name||a.title||"Achievement",target,value,u:value>=target}})}
 function loadAchievements(){if(!fbR||!db)return;db.ref("achievements").on("value",function(s){try{const v=s.val();if(!v)return;const list=Array.isArray(v)?v:Object.values(v);const valid=list.filter(a=>{if(!a)return false;const name=a.n||a.name||a.title;const target=a.target??a.goal;return name&&target!==undefined&&Number(target)>0});if(valid.length){achievementDefs=valid.map(a=>({i:a.i||a.icon||"🏆",n:a.n||a.name||a.title,type:a.type||a.category||"active",target:Number(a.target??a.goal)}));rO()}}catch(e){console.error("Achievement sync failed",e)}})}
 function rO(){let cT=0,wT=0,rT=0,aD=0,bD=0,pD=0,cM=0,wM=0,rM=0,cW=0,wW=0,rW2=0;const n=new Date(),tM=n.getMonth(),tY=n.getFullYear();const wD=gwd(0).map(d=>fd(d));Object.keys(dat.days).forEach(k=>{const r=dat.days[k]||{},d=pd(k);const hC=!!r.cal,hW=!!r.walk,hR=!!r.resistance;if(hC)cT++;if(hW)wT++;if(hR)rT++;if(hC||hW||hR)aD++;if(hC&&hW)bD++;if(hC&&hW&&hR)pD++;if(d.getMonth()===tM&&d.getFullYear()===tY){if(hC)cM++;if(hW)wM++;if(hR)rM++}if(wD.includes(k)){if(hC)cW++;if(hW)wW++;if(hR)rW2++}});document.getElementById("ocT").textContent=cT;document.getElementById("owT").textContent=wT;document.getElementById("orT").textContent=rT;document.getElementById("oA").textContent=aD;document.getElementById("oB").textContent=bD;document.getElementById("oP").textContent=pD;document.getElementById("ocM").textContent=cM;document.getElementById("owM").textContent=wM;document.getElementById("orM").textContent=rM;document.getElementById("ocW").textContent=cW;document.getElementById("owW").textContent=wW;document.getElementById("orW").textContent=rW2;const dP=n.getDate();document.getElementById("ocR").textContent=dP>0?Math.round(cM/dP*100)+"%":"0%";document.getElementById("owR").textContent=dP>0?Math.round(wM/dP*100)+"%":"0%";document.getElementById("orR").textContent=dP>0?Math.round(rM/dP*100)+"%":"0%";const cs=cStreak("cal"),ws=cStreak("walk"),rs=cStreak("resistance");const cb=bStreak("cal"),wb=bStreak("walk"),rb=bStreak("resistance");document.getElementById("ocS").textContent=cs+" day"+(cs!==1?"s":"");document.getElementById("owS").textContent=ws+" day"+(ws!==1?"s":"");document.getElementById("orS").textContent=rs+" day"+(rs!==1?"s":"");document.getElementById("ocB").textContent=cb+" day"+(cb!==1?"s":"");document.getElementById("owB").textContent=wb+" day"+(wb!==1?"s":"");document.getElementById("orB").textContent=rb+" day"+(rb!==1?"s":"");const g=document.getElementById("ag");g.innerHTML="";gAch().forEach(a=>{const el=document.createElement("div");el.className="ac "+(a.u?"unl":"lock");el.title=`${a.value}/${a.target}`;el.innerHTML=`<div class="ai">${a.i}</div><div class="an">${a.n}<br><small>${a.value}/${a.target}</small></div>`;g.appendChild(el)})}
 function cStreak(t){let s=0;const d=new Date();d.setHours(0,0,0,0);const tk=fd(d);if(!(dat.days[tk]&&dat.days[tk][t]))d.setDate(d.getDate()-1);while(true){const k=fd(d);if(dat.days[k]&&dat.days[k][t]){s++;d.setDate(d.getDate()-1)}else break}return s}
@@ -518,7 +519,47 @@ async function lCD(){const r=gCR();if(!r)return;try{const s=await r.once("value"
 async function pCD(sil){const r=gCR();if(!r||!navigator.onLine){if(!sil)sT("📴 Saved offline; will sync when online");return}try{if(!sil)sSI(true);await r.update({days:dat.days,updatedAt:Date.now()})}catch(e){console.error(e);if(!sil)sT("❌ Failed — kept offline")}finally{if(!sil)sSI(false)}}
 function aPC(){if(fbR&&cu&&navigator.onLine){syncing=true;pCD(true).finally(()=>setTimeout(()=>syncing=false,500))}}
 function atL(){const r=gCR();if(!r)return;if(cl){try{cl.off()}catch(e){}}cl=r;r.on("value",function(s){if(syncing)return;const c=s.val();if(!c||!c.days)return;if(JSON.stringify(dat.days)!==JSON.stringify(c.days)){dat={days:c.days};sd2();rA()}},function(e){console.error(e)})}
-function rCal(){const y=vd.getFullYear(),m=vd.getMonth();const fD=new Date(y,m,1).getDay();const dIM=new Date(y,m+1,0).getDate();const mn=new Intl.DateTimeFormat("en-US",{month:"long",year:"numeric"}).format(vd);document.getElementById("mn").textContent=mn;const c=document.getElementById("cal");c.innerHTML="";for(let i=0;i<fD;i++){const e=document.createElement("div");e.className="dy empty";c.appendChild(e)}for(let dy=1;dy<=dIM;dy++){const d=new Date(y,m,dy),k=fd(d);const r=dat.days[k]||{};const iB=r.cal&&r.walk&&r.resistance;const cl=document.createElement("div");cl.className="dy";if(isT(d))cl.classList.add("today");if(k===sd)cl.classList.add("sel");if(iB)cl.classList.add("both");cl.onclick=function(){sd=k;oM(k)};const nm=document.createElement("div");nm.className="dn";nm.textContent=dy;cl.appendChild(nm);if(isT(d)){const tl=document.createElement("div");tl.className="tl";tl.textContent="TODAY";cl.appendChild(tl)}const mk=document.createElement("div");mk.className="mk";if(r.cal){const mm=document.createElement("div");mm.className="mr cal";mk.appendChild(mm)}if(r.walk){const mm=document.createElement("div");mm.className="mr walk";mk.appendChild(mm)}if(r.resistance){const mm=document.createElement("div");mm.className="mr resistance";mk.appendChild(mm)}cl.appendChild(mk);c.appendChild(cl)}}
+function rCal(){
+  const year=vd.getFullYear(),month=vd.getMonth();
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  document.getElementById("mn").textContent=new Intl.DateTimeFormat("en-US",{month:"long",year:"numeric"}).format(vd);
+  const calendar=document.getElementById("cal");
+  calendar.innerHTML="";
+  for(let i=0;i<firstDay;i++){
+    const blank=document.createElement("div");
+    blank.className="dy empty";
+    calendar.appendChild(blank);
+  }
+  for(let day=1;day<=daysInMonth;day++){
+    const date=new Date(year,month,day);
+    const key=fd(date);
+    const record=dat.days[key]||{};
+    const dayCell=document.createElement("div");
+    dayCell.className="dy";
+    if(isT(date))dayCell.classList.add("today");
+    if(key===sd)dayCell.classList.add("sel");
+    if(isQualifyingDay(record))dayCell.classList.add("both");
+    dayCell.onclick=function(){sd=key;oM(key)};
+    const number=document.createElement("div");
+    number.className="dn";
+    number.textContent=day;
+    dayCell.appendChild(number);
+    if(isT(date)){
+      const todayLabel=document.createElement("div");
+      todayLabel.className="tl";
+      todayLabel.textContent="TODAY";
+      dayCell.appendChild(todayLabel);
+    }
+    const markers=document.createElement("div");
+    markers.className="mk";
+    if(record.cal){const marker=document.createElement("div");marker.className="mr cal";markers.appendChild(marker)}
+    if(record.walk){const marker=document.createElement("div");marker.className="mr walk";markers.appendChild(marker)}
+    if(record.resistance){const marker=document.createElement("div");marker.className="mr resistance";markers.appendChild(marker)}
+    dayCell.appendChild(markers);
+    calendar.appendChild(dayCell);
+  }
+}
 function cM(a){vd=new Date(vd.getFullYear(),vd.getMonth()+a,1);rCal();vib2(5)}
 function uRing(){const n=new Date();const dIM=new Date(n.getFullYear(),n.getMonth()+1,0).getDate();let cM2=0,wM2=0,rM2=0;Object.keys(dat.days).forEach(k=>{const r=dat.days[k]||{},d=pd(k);if(d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear()){if(r.cal)cM2++;if(r.walk)wM2++;if(r.resistance)rM2++}});const mx=107;const cp=Math.round(cM2/dIM*mx);const wp=Math.round(wM2/dIM*mx);const rp=Math.round(rM2/dIM*mx);document.getElementById("rc").setAttribute("stroke-dasharray",cp+" "+mx);document.getElementById("rw").setAttribute("stroke-dasharray",wp+" "+mx);document.getElementById("rr").setAttribute("stroke-dasharray",rp+" "+mx)}
 function cTot(){let c=0,w=0,r=0;Object.keys(dat.days).forEach(k=>{const i=dat.days[k]||{};if(i.cal)c++;if(i.walk)w++;if(i.resistance)r++});document.getElementById("ct").textContent=c;document.getElementById("wt").textContent=w;document.getElementById("rt").textContent=r}
